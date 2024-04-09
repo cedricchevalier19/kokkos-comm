@@ -45,7 +45,8 @@ using ScalarTypes =
 TYPED_TEST_SUITE(IsendRecv, ScalarTypes);
 
 TYPED_TEST(IsendRecv, 1D_contig) {
-  Kokkos::View<typename TestFixture::Scalar *> a("a", 1000);
+  using ScalarType = typename TestFixture::Scalar;
+  Kokkos::View<ScalarType *> a("a", 1000);
 
   int rank, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -69,7 +70,7 @@ TYPED_TEST(IsendRecv, 1D_contig) {
     Kokkos::parallel_reduce(
         a.extent(0),
         KOKKOS_LAMBDA(const int &i, int &lsum) {
-          lsum += a(i) != typename TestFixture::Scalar(i);
+          lsum |= (a(i) != static_cast<ScalarType>(i));
         },
         errs);
     ASSERT_EQ(errs, 0);
@@ -77,9 +78,9 @@ TYPED_TEST(IsendRecv, 1D_contig) {
 }
 
 TYPED_TEST(IsendRecv, 1D_noncontig) {
+  using ScalarType = typename TestFixture::Scalar;
   // this is C-style layout, i.e. b(0,0) is next to b(0,1)
-  Kokkos::View<typename TestFixture::Scalar **, Kokkos::LayoutRight> b("a", 10,
-                                                                       10);
+  Kokkos::View<ScalarType **, Kokkos::LayoutRight> b("a", 10, 10);
   auto a =
       Kokkos::subview(b, Kokkos::ALL, 2);  // take column 2 (non-contiguous)
 
@@ -89,7 +90,8 @@ TYPED_TEST(IsendRecv, 1D_noncontig) {
   if (0 == rank) {
     int dst = 1;
     Kokkos::parallel_for(
-        a.extent(0), KOKKOS_LAMBDA(const int i) { a(i) = i; });
+        a.extent(0),
+        KOKKOS_LAMBDA(const int i) { a(i) = static_cast<ScalarType>(i); });
     KokkosComm::Req req = KokkosComm::isend(Kokkos::DefaultExecutionSpace(), a,
                                             dst, 0, MPI_COMM_WORLD);
     req.wait();
@@ -101,7 +103,7 @@ TYPED_TEST(IsendRecv, 1D_noncontig) {
     Kokkos::parallel_reduce(
         a.extent(0),
         KOKKOS_LAMBDA(const int &i, int &lsum) {
-          lsum += a(i) != typename TestFixture::Scalar(i);
+          lsum |= (a(i) != static_cast<ScalarType>(i));
         },
         errs);
     ASSERT_EQ(errs, 0);
@@ -122,7 +124,7 @@ TYPED_TEST(IsendRecv, 1D_mdspan_contig) {
   if (0 == rank) {
     int dst = 1;
     for (size_t i = 0; i < a.extent(0); ++i) {
-      a[i] = i;
+      a[i] = static_cast<ScalarType>(i);
     }
     KokkosComm::Req req = KokkosComm::isend(Kokkos::DefaultExecutionSpace(), a,
                                             dst, 0, MPI_COMM_WORLD);
@@ -133,7 +135,7 @@ TYPED_TEST(IsendRecv, 1D_mdspan_contig) {
                      MPI_COMM_WORLD);
     int errs = 0;
     for (size_t i = 0; i < a.extent(0); ++i) {
-      errs += (a[i] != ScalarType(i));
+      errs |= (a[i] != static_cast<ScalarType>(i));
     }
     ASSERT_EQ(errs, 0);
   }
@@ -157,7 +159,7 @@ TYPED_TEST(IsendRecv, 1D_mdspan_noncontig) {
   if (0 == rank) {
     int dst = 1;
     for (size_t i = 0; i < a.extent(0); ++i) {
-      a[i] = i;
+      a[i] = static_cast<ScalarType>(i);
     }
     KokkosComm::Req req = KokkosComm::isend(Kokkos::DefaultExecutionSpace(), a,
                                             dst, 0, MPI_COMM_WORLD);
@@ -168,7 +170,7 @@ TYPED_TEST(IsendRecv, 1D_mdspan_noncontig) {
                      MPI_COMM_WORLD);
     int errs = 0;
     for (size_t i = 0; i < a.extent(0); ++i) {
-      errs += (a[i] != ScalarType(i));
+      errs |= (a[i] != static_cast<ScalarType>(i));
     }
     ASSERT_EQ(errs, 0);
   }
