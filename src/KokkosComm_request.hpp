@@ -26,23 +26,21 @@ class Req {
   // a type-erased view. Request uses these to keep temporary views alive for
   // the lifetime of "Immediate" MPI operations
   struct ViewHolderBase {
-    virtual ~ViewHolderBase() {}
+    virtual ~ViewHolderBase() = default;
   };
   template <typename V>
   struct ViewHolder : ViewHolderBase {
-    ViewHolder(const V &v) : v_(v) {}
+    explicit ViewHolder(const V &v) : v_(v) {}
     V v_;
   };
 
   struct Record {
-    Record() : req_(MPI_REQUEST_NULL) {}
-    MPI_Request req_;
+    MPI_Request req_ = MPI_REQUEST_NULL;
     std::vector<std::shared_ptr<ViewHolderBase>> until_waits_;
   };
 
  public:
-  Req() : record_(std::make_shared<Record>()) {}
-
+  // FIXME: dangerous, user might store a dangling reference
   MPI_Request &mpi_req() { return record_->req_; }
 
   void wait() {
@@ -58,7 +56,7 @@ class Req {
   }
 
  private:
-  std::shared_ptr<Record> record_;
+  std::shared_ptr<Record> record_ = std::make_shared<Record>();
 };
 
 }  // namespace KokkosComm
