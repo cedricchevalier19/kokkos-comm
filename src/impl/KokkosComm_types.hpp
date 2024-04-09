@@ -25,7 +25,7 @@ template <typename Scalar>
 MPI_Datatype mpi_type() {
   static_assert(std::is_void_v<Scalar>, "mpi_type not implemented");
   return MPI_CHAR;  // unreachable
-};
+}
 
 template <>
 inline MPI_Datatype mpi_type<unsigned int>() {

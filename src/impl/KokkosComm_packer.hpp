@@ -119,7 +119,6 @@ struct MpiDatatype {
   template <KokkosExecutionSpace ExecSpace>
   static void unpack_into(const ExecSpace & /*space*/, const View & /*dst*/,
                           const non_const_packed_view_type & /*src*/) {
-    return;
   }
 };
 
