@@ -18,9 +18,10 @@
 
 #include "KokkosComm.hpp"
 
+namespace {
 template <typename Space, typename View>
-void send_recv(benchmark::State &, MPI_Comm comm, const Space &space, int rank,
-               const View &v) {
+void send_recv(const benchmark::State &, MPI_Comm comm, const Space &space,
+               int rank, const View &v) {
   if (0 == rank) {
     KokkosComm::send(space, v, 1, 0, comm);
     KokkosComm::recv(space, v, 1, 0, comm);
@@ -52,5 +53,6 @@ void benchmark_sendrecv(benchmark::State &state) {
 
   state.SetBytesProcessed(sizeof(Scalar) * state.iterations() * a.size() * 2);
 }
+}  // namespace
 
 BENCHMARK(benchmark_sendrecv)->UseManualTime()->Unit(benchmark::kMillisecond);

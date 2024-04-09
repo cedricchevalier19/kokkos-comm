@@ -20,7 +20,10 @@
 
 #include <iostream>
 
-void noop(benchmark::State, MPI_Comm) {}
+namespace {
+void noop(const benchmark::State &, MPI_Comm) {
+  // do nothing by definition
+}
 
 template <typename Space, typename View>
 void send_recv(benchmark::State &, MPI_Comm comm, const Space &space, int nx,
@@ -119,5 +122,6 @@ void benchmark_2dhalo(benchmark::State &state) {
   );
   // clang-format on
 }
+}  // namespace
 
 BENCHMARK(benchmark_2dhalo)->UseManualTime()->Unit(benchmark::kMillisecond);

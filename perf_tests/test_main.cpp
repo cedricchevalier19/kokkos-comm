@@ -19,15 +19,17 @@
 #include <Kokkos_Core.hpp>
 #include <benchmark/benchmark.h>
 
+namespace {
 // This reporter does nothing.
 // We can use it to disable output from all but the root process
 class NullReporter : public ::benchmark::BenchmarkReporter {
  public:
-  NullReporter() {}
-  virtual bool ReportContext(const Context &) { return true; }
-  virtual void ReportRuns(const std::vector<Run> &) {}
-  virtual void Finalize() {}
+  NullReporter() = default;
+  bool ReportContext(const Context &) override { return true; }
+  void ReportRuns(const std::vector<Run> &) override {}
+  void Finalize() override {}
 };
+}  // namespace
 
 // The main is rewritten to allow for MPI initializing and for selecting a
 // reporter according to the process rank
