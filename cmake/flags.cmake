@@ -24,12 +24,12 @@ check_and_add_flag(KokkosCommFlags -Wno-gnu-zero-variadic-macro-arguments)
 
 # mdspan-related definitions
 if (KOKKOSCOMM_ENABLE_MDSPAN)
-    target_compile_definitions(KokkosCommFlags KOKKOSCOMM_ENABLE_MDSPAN)
+    target_compile_definitions(KokkosCommFlags INTERFACE KOKKOSCOMM_ENABLE_MDSPAN)
     if (KOKKOSCOMM_USE_STD_MDSPAN)
-        target_compile_definitions(KokkosCommFlags KOKKOSCOMM_USE_STD_MDSPAN)
+        target_compile_definitions(KokkosCommFlags INTERFACE KOKKOSCOMM_USE_STD_MDSPAN)
     elseif (KOKKOSCOMM_USE_KOKKOS_MDSPAN)
-        target_compile_definitions(KokkosCommFlags KOKKOSCOMM_USE_KOKKOS_MDSPAN)
-        target_compile_definitions(KokkosCommFlags KOKKOSCOMM_MDSPAN_IN_EXPERIMENTAL)
+        target_compile_definitions(KokkosCommFlags INTERFACE KOKKOSCOMM_USE_KOKKOS_MDSPAN)
+        target_compile_definitions(KokkosCommFlags INTERFACE KOKKOSCOMM_MDSPAN_IN_EXPERIMENTAL)
     endif ()
 endif ()
 
