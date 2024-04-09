@@ -50,10 +50,12 @@ if(KOKKOSCOMM_ENABLE_MDSPAN AND KOKKOSCOMM_USE_KOKKOS_MDSPAN)
     FetchContent_MakeAvailable(kokkos_mdspan)
 endif()
 
+# this sets CMAKE_INSTALL_[...]DIR
+include(GNUInstallDirs)
 
 include(cmake/flags.cmake)
 add_subdirectory(src)
-kokkoscomm_add_cxx_flags(TARGET KokkosComm INTERFACE)
+
 message(STATUS ${KOKKOSCOMM_PUBLIC_HEADERS})
 set_target_properties(KokkosComm PROPERTIES PUBLIC_HEADER "${KOKKOSCOMM_PUBLIC_HEADERS}")
 
@@ -67,8 +69,6 @@ configure_file(
     @ONLY
 )
 
-# this sets CMAKE_INSTALL_[...]DIR
-include(GNUInstallDirs)
 
 target_include_directories(KokkosComm INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src/>
@@ -90,14 +90,14 @@ write_basic_package_version_file(
 )
 
 export (
-    TARGETS KokkosComm
+        TARGETS KokkosComm KokkosCommFlags
     NAMESPACE "${PROJECT_NAME}::"
     FILE ${PROJECT_BINARY_DIR}/cmake/KokkosComm/KokkosCommTargets.cmake
 )
 
 
 install(
-    TARGETS KokkosComm
+        TARGETS KokkosComm KokkosCommFlags
     EXPORT KokkosCommTargets # does this do anything?
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

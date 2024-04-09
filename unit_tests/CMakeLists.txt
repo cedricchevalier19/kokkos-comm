@@ -48,9 +48,6 @@ add_executable(test-main test_main.cpp
   test_sendrecv.cpp
 )
 target_link_libraries(test-main KokkosComm::KokkosComm gtest)
-if(KOKKOSCOMM_ENABLE_TESTS)
-  kokkoscomm_add_cxx_flags(TARGET test-main)
-endif()
 
 add_test(NAME test-main
          COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 ./test-main
