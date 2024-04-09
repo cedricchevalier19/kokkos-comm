@@ -104,7 +104,7 @@ struct Traits<Span> {
   }
 
   template <typename ExecSpace>
-  static void pack(const ExecSpace &space, non_const_packed_view_type &dst,
+  static void pack(const ExecSpace &, non_const_packed_view_type &dst,
                    const Span &src) {
     using md_index = std::array<typename Span::index_type, rank()>;
 
@@ -143,7 +143,7 @@ struct Traits<Span> {
   }
 
   template <typename ExecSpace>
-  static void unpack(const ExecSpace &space, Span &dst,
+  static void unpack(const ExecSpace &, Span &dst,
                      const non_const_packed_view_type &src) {
     using md_index = std::array<typename Span::index_type, rank()>;
 

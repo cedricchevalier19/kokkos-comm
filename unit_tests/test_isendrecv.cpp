@@ -14,6 +14,10 @@
 //
 //@HEADER
 
+#include <gtest/gtest.h>
+
+#include "KokkosComm.hpp"
+
 #if KOKKOSCOMM_ENABLE_MDSPAN
 #if KOKKOSCOMM_MDSPAN_IN_EXPERIMENTAL
 #include <experimental/mdspan>
@@ -28,10 +32,6 @@ using std::MDSPAN_PREFIX() extents;
 using std::MDSPAN_PREFIX() layout_stride;
 using std::MDSPAN_PREFIX() mdspan;
 #endif  // KOKKOSCOMM_ENABLE_MDSPAN
-
-#include <gtest/gtest.h>
-
-#include "KokkosComm.hpp"
 
 template <typename T>
 class IsendRecv : public testing::Test {
