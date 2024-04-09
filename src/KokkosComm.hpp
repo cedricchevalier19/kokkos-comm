@@ -16,8 +16,9 @@
 
 #pragma once
 
+#include "KokkosComm_configuration.hpp"
+
 #include "KokkosComm_collective.hpp"
-#include "KokkosComm_version.hpp"
 #include "KokkosComm_isend.hpp"
 #include "KokkosComm_recv.hpp"
 #include "KokkosComm_send.hpp"

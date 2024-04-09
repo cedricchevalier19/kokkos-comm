@@ -22,17 +22,6 @@ check_and_add_flag(KokkosCommFlags -Wformat=2)
 check_and_add_flag(KokkosCommFlags -Wmissing-include-dirs)
 check_and_add_flag(KokkosCommFlags -Wno-gnu-zero-variadic-macro-arguments)
 
-# mdspan-related definitions
-if (KOKKOSCOMM_ENABLE_MDSPAN)
-    target_compile_definitions(KokkosCommFlags INTERFACE KOKKOSCOMM_ENABLE_MDSPAN)
-    if (KOKKOSCOMM_USE_STD_MDSPAN)
-        target_compile_definitions(KokkosCommFlags INTERFACE KOKKOSCOMM_USE_STD_MDSPAN)
-    elseif (KOKKOSCOMM_USE_KOKKOS_MDSPAN)
-        target_compile_definitions(KokkosCommFlags INTERFACE KOKKOSCOMM_USE_KOKKOS_MDSPAN)
-        target_compile_definitions(KokkosCommFlags INTERFACE KOKKOSCOMM_MDSPAN_IN_EXPERIMENTAL)
-    endif ()
-endif ()
-
 # choose cxx standard
 set_target_properties(KokkosCommFlags PROPERTIES CXX_EXTENSIONS OFF)
 if (KOKKOSCOMM_ENABLE_MDSPAN AND KOKKOSCOMM_USE_STD_MDSPAN)
