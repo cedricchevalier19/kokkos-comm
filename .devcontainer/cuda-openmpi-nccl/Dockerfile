@@ -2,7 +2,7 @@ FROM nvidia/cuda:12.9.0-devel-ubuntu24.04
 LABEL authors="cedricchevalier19"
 ENV DEBIAN_FRONTEND=noninteractive
 ENV OPENMPI_URL=https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.8.tar.gz
-ENV KOKKOS_VERSION=5.0.0
+ENV KOKKOS_VERSION=5.0.2
 
 # Install dependencies and kitware repository for latest cmake
 RUN apt-get update && apt-get install -y --no-install-recommends \
