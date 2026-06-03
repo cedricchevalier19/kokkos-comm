@@ -25,14 +25,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Compile and install openmpi from source, with CUDA support
-RUN mkdir openmpi && curl -fsSL ${OPENMPI_URL} | tar -xzf - -C openmpi --strip-components=1 \
-    && cd openmpi \
-    && ./configure --with-cuda=/usr/local/cuda --prefix=/usr/local/openmpi \
+RUN mkdir mpi && curl -fsSL ${OPENMPI_URL} | tar -xzf - -C mpi --strip-components=1 \
+    && cd mpi \
+    && ./configure --with-cuda=/usr/local/cuda --prefix=/usr/local/mpi \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
     && cd .. \
-    && rm -rf openmpi
+    && rm -rf mpi
 
 # Download and install Kokkos \
 RUN URL="$(curl -s "https://api.github.com/repos/kokkos/kokkos/releases/tags/${KOKKOS_VERSION}" | jq -r '.tarball_url')" \
