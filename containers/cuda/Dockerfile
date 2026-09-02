@@ -24,34 +24,45 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
+ENV CUDA_ROOT=/usr/local/cuda
+ENV PATH=${CUDA_ROOT}/bin:${PATH}
+ENV LD_LIBRARY_PATH=${CUDA_ROOT}/lib64:${PATH}
+
+FROM base AS kokkos
+ENV Kokkos_ROOT=/usr/local/kokkos
 # Download and install Kokkos \
 RUN URL="$(curl -s "https://api.github.com/repos/kokkos/kokkos/releases/tags/${KOKKOS_VERSION}" | jq -r '.tarball_url')" \
       && mkdir kokkos && curl -fsSL "$URL" | tar -xzf - -C kokkos --strip-components=1 \
       && cd kokkos \
-    && cmake -B build -D CMAKE_BUILD_TYPE=Release -DKokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_HOPPER90=ON -D CMAKE_INSTALL_PREFIX=/usr/local/kokkos \
+    && cmake -B build -D CMAKE_BUILD_TYPE=Release -DKokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_HOPPER90=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_SERIAL=ON -D CMAKE_INSTALL_PREFIX=${Kokkos_ROOT} \
     && cmake --build build -j$(nproc) \
     && cmake --install build \
     && cd .. \
     && rm -rf kokkos
 
-FROM base AS openmpi
-ARG OPENMPI_URL
+FROM kokkos AS mpi
+ENV MPI_ROOT=/usr/local/mpi
+ENV PATH=${MPI_ROOT}/bin:${PATH}
+ENV LD_LIBRARY_PATH=${MPI_ROOT}/lib64:${PATH}
+
+FROM mpi as openmpi 
+ARG OPENMPI_URL=https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.8.tar.gz
 # Compile and install openmpi from source, with CUDA support
 RUN mkdir mpi && curl -fsSL "${OPENMPI_URL}" | tar -xzf - -C mpi --strip-components=1 \
     && cd mpi \
-    && ./configure --with-cuda=/usr/local/cuda --prefix=/usr/local/mpi \
+    && ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
     && cd .. \
     && rm -rf mpi
 
-FROM base AS mpich
+FROM mpi AS mpich
 ARG MPICH_URL=https://www.mpich.org/static/downloads/5.0.0/mpich-5.0.0.tar.gz
 # Compile and install openmpi from source, with CUDA support
 RUN mkdir mpi && curl -fsSL "${MPICH_URL}" | tar -xzf - -C mpi --strip-components=1 \
     && cd mpi \
-    && ./configure --with-cuda=/usr/local/cuda --prefix=/usr/local/mpi --disable-fortran \
+    && ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} --disable-fortran \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
