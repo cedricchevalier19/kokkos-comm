@@ -6,5 +6,5 @@ services:
       args:
         MPICH_URL: "https://www.mpich.org/static/downloads/5.0.0/mpich-5.0.0.tar.gz"
     volumes:
-      - ../..:/workspaces:cached
+      - ../..:/workspace:cached,Z
     command: sleep infinity

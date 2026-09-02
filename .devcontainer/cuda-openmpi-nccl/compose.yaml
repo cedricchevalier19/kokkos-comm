@@ -6,5 +6,5 @@ services:
       args:
         OPENMPI_URL: "https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.8.tar.gz"
     volumes:
-      - ../..:/workspaces:cached
+      - ../..:/workspaces:cached,Z
     command: sleep infinity
