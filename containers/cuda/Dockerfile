@@ -1,5 +1,5 @@
 ARG CUDA_VERSION=12.9.0
-FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu24.04
+FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu24.04 AS base
 LABEL authors="cedricchevalier19"
 ENV DEBIAN_FRONTEND=noninteractive
 ARG KOKKOS_VERSION=5.2.0
@@ -34,3 +34,26 @@ RUN URL="$(curl -s "https://api.github.com/repos/kokkos/kokkos/releases/tags/${K
     && cd .. \
     && rm -rf kokkos
 
+FROM base AS openmpi
+ARG OPENMPI_URL
+# Compile and install openmpi from source, with CUDA support
+RUN mkdir mpi && curl -fsSL "${OPENMPI_URL}" | tar -xzf - -C mpi --strip-components=1 \
+    && cd mpi \
+    && ./configure --with-cuda=/usr/local/cuda --prefix=/usr/local/mpi \
+    && make -j$(nproc) \
+    && make install \
+    && ldconfig \
+    && cd .. \
+    && rm -rf mpi
+
+FROM base AS mpich
+ARG MPICH_URL=https://www.mpich.org/static/downloads/5.0.0/mpich-5.0.0.tar.gz
+# Compile and install openmpi from source, with CUDA support
+RUN mkdir mpi && curl -fsSL "${MPICH_URL}" | tar -xzf - -C mpi --strip-components=1 \
+    && cd mpi \
+    && ./configure --with-cuda=/usr/local/cuda --prefix=/usr/local/mpi --disable-fortran \
+    && make -j$(nproc) \
+    && make install \
+    && ldconfig \
+    && cd .. \
+    && rm -rf mpi
