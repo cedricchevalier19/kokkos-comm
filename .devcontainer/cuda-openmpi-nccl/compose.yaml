@@ -1,0 +1,17 @@
+services:
+  base:
+    build:
+      context: ../../containers/cuda/
+    image: kokkoscomm/cudabase
+  devcontainer:
+    build:
+      context: .
+      args:
+        OPENMPI_URL: "https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.8.tar.gz"
+        BASE_IMAGE: kokkoscomm/cudabase
+      context: .
+      additional_contexts:
+        base: service:base
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
