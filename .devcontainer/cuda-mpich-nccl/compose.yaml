@@ -8,4 +8,5 @@ services:
         MPI_VENDOR: mpich
     volumes:
       - ../..:/workspace:cached,Z
+    tmpfs: /build
     command: sleep infinity
