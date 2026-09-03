@@ -13,8 +13,8 @@ RUN --mount=type=cache,target=/var/lib/apt/lists <<'EOF' bash
     [ -r /etc/lsb-release ] && . /etc/lsb-release
     apt-get update && apt-get install -y --no-install-recommends apt-transport-https gnupg software-properties-common curl
     curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc  2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
-    echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $DISTRIB_CODENAME main" > /etc/apt/sources.list.d/kitware.list 
-    apt-get update && apt-get install -y --no-install-recommends kitware-archive-keyring 
+    echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $DISTRIB_CODENAME main" > /etc/apt/sources.list.d/kitware.list
+    apt-get update && apt-get install -y --no-install-recommends kitware-archive-keyring
 EOF
 
 RUN --mount=type=cache,target=/var/lib/apt/lists <<EOF bash
@@ -37,10 +37,10 @@ RUN <<'EOF' bash
     mkdir kokkos && curl -fsSL "$URL" | tar -xzf - -C kokkos --strip-components=1
     cd kokkos
     cmake -B build -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=${Kokkos_ROOT} \
-     -DKokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_HOPPER90=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_SERIAL=ON 
-    cmake --build build -j$(nproc) 
-    cmake --install build 
-    cd .. 
+     -DKokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_HOPPER90=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_SERIAL=ON
+    cmake --build build -j$(nproc)
+    cmake --install build
+    cd ..
     rm -rf kokkos
 EOF
 
@@ -49,7 +49,7 @@ ENV MPI_ROOT=/usr/local/mpi
 ENV PATH=${MPI_ROOT}/bin:${PATH}
 ENV LD_LIBRARY_PATH=${MPI_ROOT}/lib64:${PATH}
 
-FROM mpi as openmpi 
+FROM mpi as openmpi
 ARG OPENMPI_URL=https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.8.tar.gz
 # Compile and install openmpi from source, with CUDA support
 RUN --mount=type=cache,target=/root/.cache/ccache <<'EOF' bash
