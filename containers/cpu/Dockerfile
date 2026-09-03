@@ -1,30 +1,14 @@
-ARG CUDA_VERSION=12.9.0
 ARG MPI_VENDOR=openmpi
-FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu24.04 AS base
+FROM debian:stable AS base
 LABEL authors="cedricchevalier19"
 ENV DEBIAN_FRONTEND=noninteractive
 ARG KOKKOS_VERSION=5.2.0
 
-# Install dependencies and kitware repository for latest cmake
-RUN --mount=type=cache,target=/var/lib/apt/lists <<'EOF' bash
-    set -exuo pipefail
-    [ -r /etc/lsb-release ] && . /etc/lsb-release
-    apt-get update && apt-get install -y --no-install-recommends apt-transport-https gnupg software-properties-common curl
-    curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc  2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
-    echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $DISTRIB_CODENAME main" > /etc/apt/sources.list.d/kitware.list
-    apt-get update && apt-get install -y --no-install-recommends kitware-archive-keyring
-EOF
-
 RUN --mount=type=cache,target=/var/lib/apt/lists <<EOF bash
     set -exuo pipefail
     apt-get update && apt-get install -y --no-install-recommends \
-    build-essential ccache cmake git ca-certificates libnuma-dev jq less gdb
+    build-essential ccache cmake curl gcc git ca-certificates libnuma-dev jq less gdb
 EOF
-
-ENV CUDA_ROOT=/usr/local/cuda
-ENV PATH=${CUDA_ROOT}/bin:${PATH}
-ENV LD_LIBRARY_PATH=${CUDA_ROOT}/lib64:${PATH}
-ENV NVCC_CCBIN=/usr/bin/gcc
 
 FROM base AS kokkos
 ENV Kokkos_ROOT=/usr/local/kokkos
@@ -35,7 +19,7 @@ RUN <<'EOF' bash
     mkdir kokkos && curl -fsSL "$URL" | tar -xzf - -C kokkos --strip-components=1
     cd kokkos
     cmake -B build -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=${Kokkos_ROOT} \
-     -DKokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_HOPPER90=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_SERIAL=ON
+     -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_SERIAL=ON
     cmake --build build -j$(nproc)
     cmake --install build
     cd ..
@@ -54,7 +38,7 @@ RUN --mount=type=cache,target=/root/.cache/ccache <<'EOF' bash
     set -exuo pipefail
     mkdir mpi && curl -fsSL "${OPENMPI_URL}" | tar -xzf - -C mpi --strip-components=1
     cd mpi
-    CC="ccache gcc" CXX="ccache g++" NVCC="ccache nvcc" ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT}
+    CC="ccache gcc" CXX="ccache g++" ./configure --prefix=${MPI_ROOT}
     make -j$(nproc)
     make install
     ldconfig
@@ -73,7 +57,7 @@ RUN --mount=type=cache,target=/root/.cache/ccache <<'EOF' bash
     mkdir mpi && curl -fsSL "${MPICH_URL}" | tar -xzf - -C mpi --strip-components=1
     cd mpi
     patch -p1 < ../mpich-nvcc.patch
-    CC="ccache gcc" CXX="ccache g++" NVCC="ccache nvcc" NVCC_BIN=/usr/bin/gcc ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} --disable-fortran
+    CC="ccache gcc" CXX="ccache g++"./configure --prefix=${MPI_ROOT} --disable-fortran
     make -j$(nproc)
     make install
     ldconfig
