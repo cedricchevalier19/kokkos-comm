@@ -2,9 +2,10 @@ services:
   devcontainer:
     build:
       context: ../../containers/cuda/
-      target: openmpi
+      target: workhorse
       args:
         OPENMPI_URL: "https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.8.tar.gz"
+        MPI_VENDOR: openmpi
     volumes:
       - ../..:/workspaces:cached,Z
     command: sleep infinity

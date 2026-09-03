@@ -1,4 +1,5 @@
 ARG CUDA_VERSION=12.9.0
+ARG MPI_VENDOR=openmpi
 FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu24.04 AS base
 LABEL authors="cedricchevalier19"
 ENV DEBIAN_FRONTEND=noninteractive
@@ -17,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    ccache \
     cmake \
     git \
     ca-certificates \
@@ -27,6 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV CUDA_ROOT=/usr/local/cuda
 ENV PATH=${CUDA_ROOT}/bin:${PATH}
 ENV LD_LIBRARY_PATH=${CUDA_ROOT}/lib64:${PATH}
+ENV NVCC_CCBIN=/usr/bin/gcc
 
 FROM base AS kokkos
 ENV Kokkos_ROOT=/usr/local/kokkos
@@ -40,7 +43,7 @@ RUN URL="$(curl -s "https://api.github.com/repos/kokkos/kokkos/releases/tags/${K
     && cd .. \
     && rm -rf kokkos
 
-FROM kokkos AS mpi
+FROM base AS mpi
 ENV MPI_ROOT=/usr/local/mpi
 ENV PATH=${MPI_ROOT}/bin:${PATH}
 ENV LD_LIBRARY_PATH=${MPI_ROOT}/lib64:${PATH}
@@ -48,23 +51,31 @@ ENV LD_LIBRARY_PATH=${MPI_ROOT}/lib64:${PATH}
 FROM mpi as openmpi 
 ARG OPENMPI_URL=https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.8.tar.gz
 # Compile and install openmpi from source, with CUDA support
-RUN mkdir mpi && curl -fsSL "${OPENMPI_URL}" | tar -xzf - -C mpi --strip-components=1 \
+RUN --mount=type=cache,target=/root/.cache/ccache mkdir mpi && curl -fsSL "${OPENMPI_URL}" | tar -xzf - -C mpi --strip-components=1 \
     && cd mpi \
-    && ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} \
+    && CC="ccache gcc" CXX="ccache g++" ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
     && cd .. \
-    && rm -rf mpi
+    && rm -rf mpi \
+    && ccache -s
 
 FROM mpi AS mpich
 ARG MPICH_URL=https://www.mpich.org/static/downloads/5.0.0/mpich-5.0.0.tar.gz
+# Filter out `ccbin` option that conflicts with ccache. Rely on NVCC_BIN.
+ADD mpich-nvcc.patch .
 # Compile and install openmpi from source, with CUDA support
-RUN mkdir mpi && curl -fsSL "${MPICH_URL}" | tar -xzf - -C mpi --strip-components=1 \
+RUN --mount=type=cache,target=/root/.cache/ccache mkdir mpi && curl -fsSL "${MPICH_URL}" | tar -xzf - -C mpi --strip-components=1 \
     && cd mpi \
-    && ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} --disable-fortran \
+    && patch -p1 < ../mpich-nvcc.patch \
+    && CC="ccache gcc" CXX="ccache g++" NVCC_BIN=/usr/bin/gcc ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} --disable-fortran \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
     && cd .. \
-    && rm -rf mpi
+    && rm -rf mpi \
+    && ccache -s
+
+FROM ${MPI_VENDOR} AS workhorse
+COPY --from=kokkos /usr/local/kokkos/ /usr/local/kokkos/
