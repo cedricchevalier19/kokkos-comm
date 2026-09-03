@@ -53,7 +53,7 @@ ARG OPENMPI_URL=https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.
 # Compile and install openmpi from source, with CUDA support
 RUN --mount=type=cache,target=/root/.cache/ccache mkdir mpi && curl -fsSL "${OPENMPI_URL}" | tar -xzf - -C mpi --strip-components=1 \
     && cd mpi \
-    && CC="ccache gcc" CXX="ccache g++" ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} \
+    && CC="ccache gcc" CXX="ccache g++" NVCC="ccache nvcc" ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
@@ -69,7 +69,7 @@ ADD mpich-nvcc.patch .
 RUN --mount=type=cache,target=/root/.cache/ccache mkdir mpi && curl -fsSL "${MPICH_URL}" | tar -xzf - -C mpi --strip-components=1 \
     && cd mpi \
     && patch -p1 < ../mpich-nvcc.patch \
-    && CC="ccache gcc" CXX="ccache g++" NVCC_BIN=/usr/bin/gcc ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} --disable-fortran \
+    && CC="ccache gcc" CXX="ccache g++" NVCC="ccache nvcc" NVCC_BIN=/usr/bin/gcc ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} --disable-fortran \
     && make -j$(nproc) \
     && make install \
     && ldconfig \
