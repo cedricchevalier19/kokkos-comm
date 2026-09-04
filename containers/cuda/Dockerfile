@@ -19,7 +19,7 @@ EOF
 RUN --mount=type=cache,target=/var/lib/apt/lists <<EOF bash
     set -exuo pipefail
     apt-get update && apt-get install -y --no-install-recommends \
-    build-essential ccache cmake git ca-certificates libnuma-dev jq less gdb
+    build-essential  ca-certificates ccache cmake gdb git jq libnuma-dev less ninja-build
 EOF
 
 ENV CUDA_ROOT=/usr/local/cuda
@@ -62,6 +62,9 @@ RUN --mount=type=cache,target=/root/.cache/ccache <<'EOF' bash
     cd ..
     rm -rf mpi
     ccache -s
+# Allow to run mpi program as root
+ENV OMPI_ALLOW_RUN_AS_ROOT=1
+ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 EOF
 
 FROM mpi AS mpich
