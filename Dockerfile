@@ -77,7 +77,7 @@ EOF
 FROM mpi AS mpich
 ARG MPICH_URL=https://www.mpich.org/static/downloads/5.0.0/mpich-5.0.0.tar.gz
 # Filter out `ccbin` option that conflicts with ccache. Rely on NVCC_BIN.
-ADD mpich-nvcc.patch .
+ADD containers/mpich-nvcc.patch .
 # Compile and install openmpi from source, with CUDA support
 RUN --mount=type=cache,target=/root/.cache/ccache <<'EOF' bash
     set -exuo pipefail
@@ -98,7 +98,7 @@ FROM ${MPI_VENDOR} AS workhorse
 COPY --from=kokkos /usr/local/kokkos/ /usr/local/kokkos/
 
 FROM workhorse AS devhorse
-ADD requirements.txt .
+ADD docs/requirements.txt .
 RUN --mount=type=cache,target=/var/lib/apt/lists <<EOF bash
     set -exuo pipefail
     apt-get update && apt-get install -y --no-install-recommends \

@@ -1,7 +1,7 @@
 services:
   devcontainer:
     build:
-      context: ../../containers/cuda/
+      context: ../../
       target: devhorse
       args:
         MPICH_URL: "https://www.mpich.org/static/downloads/5.0.0/mpich-5.0.0.tar.gz"
