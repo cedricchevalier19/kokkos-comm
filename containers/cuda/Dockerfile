@@ -1,6 +1,7 @@
 ARG CUDA_VERSION=12.9.0
+ARG BASE_IMAGE=nvidia/cuda:${CUDA_VERSION}-devel-ubuntu24.04
 ARG MPI_VENDOR=openmpi
-FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu24.04 AS base
+FROM ${BASE_IMAGE} AS base
 LABEL authors="cedricchevalier19"
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C
@@ -9,17 +10,20 @@ ARG KOKKOS_VERSION=5.2.0
 # Install dependencies and kitware repository for latest cmake
 RUN --mount=type=cache,target=/var/lib/apt/lists <<'EOF' bash
     set -exuo pipefail
+    DISTRIB_CODENAME=""
     [ -r /etc/lsb-release ] && . /etc/lsb-release
-    apt-get update && apt-get install -y --no-install-recommends apt-transport-https gnupg software-properties-common curl
-    curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc  2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
-    echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $DISTRIB_CODENAME main" > /etc/apt/sources.list.d/kitware.list
-    apt-get update && apt-get install -y --no-install-recommends kitware-archive-keyring
+    if [ -n "${DISTRIB_CODENAME}" ]; then
+        apt-get update && apt-get install -y --no-install-recommends apt-transport-https gnupg software-properties-common curl
+        curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc  2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+        echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $DISTRIB_CODENAME main" > /etc/apt/sources.list.d/kitware.list
+        apt-get update && apt-get install -y --no-install-recommends kitware-archive-keyring;
+    fi
 EOF
 
 RUN --mount=type=cache,target=/var/lib/apt/lists <<EOF bash
     set -exuo pipefail
     apt-get update && apt-get install -y --no-install-recommends \
-    build-essential  ca-certificates ccache cmake gdb git jq libnuma-dev less ninja-build
+    build-essential ca-certificates ccache cmake curl gdb git jq libnuma-dev less ninja-build
 EOF
 
 ENV CUDA_ROOT=/usr/local/cuda
@@ -29,14 +33,16 @@ ENV NVCC_CCBIN=/usr/bin/gcc
 
 FROM base AS kokkos
 ENV Kokkos_ROOT=/usr/local/kokkos
+ARG CUDA_ARCH=HOPPER90
 # Download and install Kokkos \
 RUN <<'EOF' bash
     set -exuo pipefail
     URL="$(curl -s "https://api.github.com/repos/kokkos/kokkos/releases/tags/${KOKKOS_VERSION}" | jq -r '.tarball_url')"
     mkdir kokkos && curl -fsSL "$URL" | tar -xzf - -C kokkos --strip-components=1
     cd kokkos
+    CMAKE_FLAGS=$([ -r "${CUDA_ROOT}" ] && echo "-DKokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_${CUDA_ARCH}=ON" || echo "")
     cmake -B build -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=${Kokkos_ROOT} \
-     -DKokkos_ENABLE_CUDA=ON -D Kokkos_ARCH_HOPPER90=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_SERIAL=ON
+     ${CMAKE_FLAGS} -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_SERIAL=ON
     cmake --build build -j$(nproc)
     cmake --install build
     cd ..
@@ -55,7 +61,8 @@ RUN --mount=type=cache,target=/root/.cache/ccache <<'EOF' bash
     set -exuo pipefail
     mkdir mpi && curl -fsSL "${OPENMPI_URL}" | tar -xzf - -C mpi --strip-components=1
     cd mpi
-    CC="ccache gcc" CXX="ccache g++" NVCC="ccache nvcc" ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT}
+    CONFIGURE_FLAGS=$([ -r "${CUDA_ROOT}" ] && echo "--with-cuda=${CUDA_ROOT}" || echo "")
+    CC="ccache gcc" CXX="ccache g++" NVCC="ccache nvcc" ./configure ${CONFIGURE_FLAGS} --prefix=${MPI_ROOT}
     make -j$(nproc)
     make install
     ldconfig
@@ -77,7 +84,8 @@ RUN --mount=type=cache,target=/root/.cache/ccache <<'EOF' bash
     mkdir mpi && curl -fsSL "${MPICH_URL}" | tar -xzf - -C mpi --strip-components=1
     cd mpi
     patch -p1 < ../mpich-nvcc.patch
-    CC="ccache gcc" CXX="ccache g++" NVCC="ccache nvcc" NVCC_BIN=/usr/bin/gcc ./configure --with-cuda=${CUDA_ROOT} --prefix=${MPI_ROOT} --disable-fortran
+    CONFIGURE_FLAGS=$([ -r "${CUDA_ROOT}" ] && echo "--with-cuda=${CUDA_ROOT}" || echo "")
+    CC="ccache gcc" CXX="ccache g++" NVCC="ccache nvcc" NVCC_BIN=/usr/bin/gcc ./configure ${CONFIGURE_FLAGS} --prefix=${MPI_ROOT} --disable-fortran
     make -j$(nproc)
     make install
     ldconfig
