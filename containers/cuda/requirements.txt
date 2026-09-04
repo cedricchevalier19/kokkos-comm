@@ -1,0 +1,4 @@
+sphinx
+sphinx-copybutton
+sphinx-last-updated-by-git
+furo

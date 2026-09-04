@@ -3,6 +3,7 @@ ARG MPI_VENDOR=openmpi
 FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu24.04 AS base
 LABEL authors="cedricchevalier19"
 ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C
 ARG KOKKOS_VERSION=5.2.0
 
 # Install dependencies and kitware repository for latest cmake
@@ -84,3 +85,13 @@ EOF
 
 FROM ${MPI_VENDOR} AS workhorse
 COPY --from=kokkos /usr/local/kokkos/ /usr/local/kokkos/
+
+FROM workhorse AS devhorse
+ADD requirements.txt .
+RUN --mount=type=cache,target=/var/lib/apt/lists <<EOF bash
+    set -exuo pipefail
+    apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip gdb
+    echo "pre-commit" >> requirements.txt
+    pip3 install --break-system-packages -r requirements.txt
+EOF
